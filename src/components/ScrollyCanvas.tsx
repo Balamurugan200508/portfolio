@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useScroll, useMotionValueEvent } from 'framer-motion';
 
 const FRAME_COUNT = 121;
@@ -8,40 +8,18 @@ const FRAME_COUNT = 121;
 export default function ScrollyCanvas({ children }: { children?: React.ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [images, setImages] = useState<HTMLImageElement[]>([]);
+  const imagesRef = useRef<HTMLImageElement[]>([]);
   
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start start', 'end end']
   });
 
-  useEffect(() => {
-    // Preload all images
-    const loadedImages: HTMLImageElement[] = [];
-    let loadedCount = 0;
-
-    for (let i = 1; i <= FRAME_COUNT; i++) {
-      const img = new Image();
-      const paddedIndex = i.toString().padStart(3, '0');
-      img.src = `/sequence/ezgif-frame-${paddedIndex}.png`;
-      img.onload = () => {
-        loadedCount++;
-        if (loadedCount === FRAME_COUNT) {
-          // Render the first frame when all are loaded
-          renderFrame(1);
-        }
-      };
-      loadedImages.push(img);
-    }
-    setImages(loadedImages);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const renderFrame = (frameIndex: number) => {
-    if (!canvasRef.current || images.length === 0) return;
+    if (!canvasRef.current || imagesRef.current.length === 0) return;
     
     const index = Math.min(Math.max(frameIndex - 1, 0), FRAME_COUNT - 1);
-    const img = images[index];
+    const img = imagesRef.current[index];
     if (!img) return;
 
     const canvas = canvasRef.current;
@@ -80,9 +58,32 @@ export default function ScrollyCanvas({ children }: { children?: React.ReactNode
     ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
   };
 
+  useEffect(() => {
+    // Preload all images
+    const loadedImages: HTMLImageElement[] = [];
+    for (let i = 1; i <= FRAME_COUNT; i++) {
+      loadedImages.push(new Image());
+    }
+    
+    imagesRef.current = loadedImages;
+
+    for (let i = 1; i <= FRAME_COUNT; i++) {
+      const img = loadedImages[i - 1];
+      const paddedIndex = i.toString().padStart(3, '0');
+      img.src = `/sequence/ezgif-frame-${paddedIndex}.png`;
+      img.onload = () => {
+        const expectedFrame = Math.max(1, Math.min(FRAME_COUNT, Math.floor(scrollYProgress.get() * FRAME_COUNT) + 1));
+        if (i === expectedFrame) {
+          renderFrame(expectedFrame);
+        }
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useMotionValueEvent(scrollYProgress, "change", (latest) => {
     const currentFrame = Math.max(1, Math.min(FRAME_COUNT, Math.floor(latest * FRAME_COUNT) + 1));
-    if (images.length > 0) {
+    if (imagesRef.current.length > 0) {
       renderFrame(currentFrame);
     }
   });
@@ -95,7 +96,7 @@ export default function ScrollyCanvas({ children }: { children?: React.ReactNode
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [images, scrollYProgress]);
+  }, [scrollYProgress]);
 
   return (
     <div ref={containerRef} className="relative h-[500vh] w-full bg-[#121212]">
