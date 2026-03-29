@@ -28,6 +28,18 @@ export default function Overlay() {
       >
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-4">S Balamurugan</h1>
         <p className="text-xl md:text-3xl font-light text-gray-300">AI & Software Developer.</p>
+
+        {/* Scroll Indicator */}
+        <motion.div 
+          className="absolute bottom-12 md:bottom-24 flex flex-col items-center gap-2 opacity-70"
+          animate={{ y: [0, 10, 0] }}
+          transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+        >
+          <span className="text-xs md:text-sm uppercase tracking-[0.3em] text-gray-300">Scroll to explore</span>
+          <svg className="w-5 h-5 md:w-6 md:h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        </motion.div>
       </motion.div>
 
       {/* Section 2: Left Aligned */}
